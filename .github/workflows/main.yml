@@ -10,11 +10,11 @@ jobs:
       run: |
         Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe" -OutFile "MozillaBuildSetup.exe"
         Start-Process -FilePath .\MozillaBuildSetup.exe -Args '/S' -Wait -NoNewWindow
-
+    
     - name: Setup Environment Variables
       run: |
         echo "MOZILLABUILD_PATH=C:\mozilla-build" >> $GITHUB_ENV
-        echo "PATH=${env:MOZILLABUILD_PATH}\msys\bin;${env:PATH}" >> $GITHUB_ENV
+        echo "PATH=${env:MOZILLABUILD_PATH}\msys\bin;${env:MOZILLABUILD_PATH}\bin;${env:PATH}" >> $GITHUB_ENV
 
     - name: Checkout NSS
       uses: actions/checkout@v2
