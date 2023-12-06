@@ -75,7 +75,7 @@ jobs:
       - name: Build NSS
         run: |
           cd "$NSS_DIR"
-          ./build.sh --opt
+          ./build.sh
         env:
           NSS_DIR: ${{ github.workspace }}/nss
 
