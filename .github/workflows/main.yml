@@ -27,7 +27,7 @@ jobs:
         cd nss
         git submodule update --init
         cd ..
-        git clone https://hg.mozilla.org/projects/nspr
+        hg clone https://hg.mozilla.org/projects/nspr
 
     - name: Build NSS
       run: |
