@@ -22,26 +22,23 @@ jobs:
         install: nsinstall ninja python-six
         path-type: inherit
 
-    - name: Install Gyp-Next
+    - name: Install GYP
       run: |
         python3 -m pip install gyp-next
-        echo "GYP_MSVS_OVERRIDE_PATH=C:\Program Files\Microsoft Visual Studio\2022\Enterprise" >> $GITHUB_ENV
-        echo "GYP_MSVS_VERSION=2022" >> $GITHUB_ENV
+        echo "PATH=${env:PATH};${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools" >> $GITHUB_ENV
 
-    - name: Fetch NSS and NSPR
+    - name: Clone and Extract NSS
       run: |
-        hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
-        git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
+        Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_${{ env.VERSION_UNDERSCORED }}_RTM/src/nss-${{ env.VERSION }}.tar.gz" -OutFile "nss-${{ env.VERSION }}.tar.gz"
+        tar -xzf "nss-${{ env.VERSION }}.tar.gz" -C "${{ env.NSS_DIR }}"
       env:
+        VERSION: 3.45 # replace with actual version
+        VERSION_UNDERSCORED: 3_45 # replace with actual version underscored
         NSS_DIR: ${{ github.workspace }}/nss
-        NSPR_DIR: ${{ github.workspace }}/nspr
-    
+
     - name: Build NSS
       run: |
-        cd "$NSS_DIR"
+        cd "${{ env.NSS_DIR }}/nss"
         bash ./build.sh -v -Ddisable_tests=1 --static
-      shell: bash
       env:
         NSS_DIR: ${{ github.workspace }}/nss
-        NSPR_DIR: ${{ github.workspace }}/nspr
-
