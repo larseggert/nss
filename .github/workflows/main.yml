@@ -69,28 +69,27 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cd "$NSS_DIR"
-          ./build.sh
+          ./mach build
+          # ./build.sh
         env:
           NSS_DIR: ${{ github.workspace }}/nss
 
-      - name: Setup WSL for Windows build
-        if: runner.os == 'Windows'
-        run: |
-          wsl --install -d Ubuntu
-          wsl --set-version Ubuntu 2
-          wsl -l -v
-          wsl sudo apt update && sudo apt upgrade -y
-          # Install necessary build tools inside WSL
-          wsl sudo apt install build-essential
+      # - name: Setup WSL for Windows build
+      #   if: runner.os == 'Windows'
+      #   run: |
+      #     wsl --install -d Ubuntu
+      #     wsl --set-version Ubuntu 2
+      #     wsl -l -v
+      #     wsl sudo apt update && sudo apt upgrade -y
+      #     # Install necessary build tools inside WSL
+      #     wsl sudo apt install build-essential
       
-      - name: Build with WSL (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          wsl -- cd "$NSS_DIR" && ./build.sh --opt
-        env:
-          NSS_DIR: ${{ github.workspace }}/nss
-
-
+      # - name: Build with WSL (Windows)
+      #   if: runner.os == 'Windows'
+      #   run: |
+      #     wsl -- cd "$NSS_DIR" && ./build.sh --opt
+      #   env:
+      #     NSS_DIR: ${{ github.workspace }}/nss
 
       # - name: Rewire NSS build.sh (Windows)
       #   if: runner.os == 'Windows'
