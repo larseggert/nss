@@ -44,25 +44,9 @@ jobs:
           python3 -m pip install packaging
           echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
 
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Set-ExecutionPolicy Unrestricted -Scope Process; iex (iwr "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
-
-      - name: Set up Windows build environment
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Install Rust tools
-        run: cargo +${{ matrix.rust-toolchain }} binstall --no-confirm cargo-llvm-cov cargo-nextest
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      # This step might be removed if the distro included a recent enough
-      # version of NSS.  Ubuntu 20.04 only has 3.49, which is far too old.
-      # (neqo-crypto/build.rs would also need to query pkg-config to get the
-      # right build flags rather than building NSS.)
       - name: Fetch NSS and NSPR
         run: |
           hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
