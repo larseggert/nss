@@ -65,18 +65,49 @@ jobs:
           NSS_DIR: ${{ github.workspace }}/nss
           NSPR_DIR: ${{ github.workspace }}/nspr
 
-      - name: Rewire NSS build.sh (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "#!/usr/bin/env bash" > "$NSS_DIR"/build.sh
-          echo "make -C \"$NSS_DIR\" -j \"$NSS_JOBS\" nss_build_all USE_64=1 NSS_DISABLE_GTESTS=1" >> "$NSS_DIR"/build.sh
-          echo "BASH=$SHELL" >> "$GITHUB_ENV"
-
-      - name: Build NSS
+      - name: Build NSS (Linux and MacOS)
+        if: runner.os != 'Windows'
         run: |
           cd "$NSS_DIR"
           ./build.sh
         env:
           NSS_DIR: ${{ github.workspace }}/nss
+
+      - name: Setup WSL for Windows build
+        if: runner.os == 'Windows'
+        run: |
+          wsl --install -d Ubuntu
+          wsl --set-version Ubuntu 2
+          wsl -l -v
+          wsl sudo apt update && sudo apt upgrade -y
+          # Install necessary build tools inside WSL
+          wsl sudo apt install build-essential
+      
+      - name: Build with WSL (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          wsl -- cd "$NSS_DIR" && ./build.sh --opt
+        env:
+          NSS_DIR: ${{ github.workspace }}/nss
+
+
+
+      # - name: Rewire NSS build.sh (Windows)
+      #   if: runner.os == 'Windows'
+      #   run: |
+      #     echo "#!/usr/bin/env bash" > "$NSS_DIR"/build.sh
+      #     echo "make -C \"$NSS_DIR\" -j \"$NSS_JOBS\" nss_build_all USE_64=1 NSS_DISABLE_GTESTS=1" >> "$NSS_DIR"/build.sh
+      #     echo "BASH=$SHELL" >> "$GITHUB_ENV"
+
+      # - name: Build NSS with make/msvc (Windows)
+      #   if: runner.os == 'Windows'
+      #   shell: bash
+      #   env:
+      #     OS_TARGET: WIN95
+      #     # OS_ARCH: WINNT
+      #   run: |
+      #     rm /usr/bin/link.exe || true
+      #     make -C "$NSS_DIR" nss_build_all USE_64=1 OS_ARCH=WINNT || true
+      #     find dist || true
 
 
