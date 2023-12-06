@@ -22,9 +22,10 @@ jobs:
 
       - name: Build NSS
         run: |
-          $vswherePath = Join-Path $env:ProgramFiles(x86) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vswherePath = Join-Path "${env:ProgramFiles(x86)}" 'Microsoft Visual Studio\Installer\vswhere.exe'
           $vsPath = & "$vswherePath" -latest -property installationPath
           $vsDevCmd = Join-Path $vsPath 'Common7\Tools\VsDevCmd.bat'
           & cmd.exe /c "CALL `"$vsDevCmd`" -arch=amd64 && cd C:\mozilla-build\msys && msys && cd /c/build/nss-3.45/nss && ./build.sh"
         shell: powershell
+
 
