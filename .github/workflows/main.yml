@@ -16,25 +16,33 @@ jobs:
         echo "MOZILLABUILD_PATH=C:\mozilla-build" >> $GITHUB_ENV
         echo "PATH=${env:MOZILLABUILD_PATH}\msys\bin;${env:MOZILLABUILD_PATH}\bin;${env:PATH}" >> $GITHUB_ENV
 
-    - name: Checkout NSS
-      uses: actions/checkout@v2
-      with:
-        repository: 'nss-dev/nss'
-        path: 'nss'
+    # - name: Checkout NSS
+    #   uses: actions/checkout@v2
+    #   with:
+    #     repository: 'nss-dev/nss'
+    #     path: 'nss'
 
-    - name: Setup NSS and NSPR
-      run: |
-        cd nss
-        git submodule update --init
-        cd ..
-        hg clone https://hg.mozilla.org/projects/nspr
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          install: nsinstall ninja python-six # gyp in msys2 is too old, install separately
+          path-type: inherit
 
-    - name: Build NSS
-      run: |
-        cd nss
-        ./build.sh
-      shell: bash
-      env:
-        NSS_DIR: ${{ github.workspace }}/nss
-        NSPR_DIR: ${{ github.workspace }}/nspr
-        OS_TARGET: WIN95
+      - name: Install more dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          python3 -m pip install gyp-next
+          echo "OS_TARGET=WIN95" >> $GITHUB_ENV
+          echo "GYP_MSVS_OVERRIDE_PATH=C:\Program Files\Microsoft Visual Studio\2022\Enterprise" >> $GITHUB_ENV
+          echo "GYP_MSVS_VERSION=2022" >> $GITHUB_ENV
+      
+      - name: Fetch NSS and NSPR
+        run: |
+          hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
+          git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
+          "$NSS_DIR"/build.sh -v -Ddisable_tests=1 --static
+        env:
+          NSS_DIR: ${{ github.workspace }}/nss
+          NSPR_DIR: ${{ github.workspace }}/nspr
