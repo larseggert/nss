@@ -34,3 +34,7 @@ jobs:
         cd nss
         ./build.sh
       shell: bash
+      env:
+        NSS_DIR: ${{ github.workspace }}/nss
+        NSPR_DIR: ${{ github.workspace }}/nspr
+        OS_TARGET: WIN95
