@@ -32,8 +32,13 @@ jobs:
       run: |
         hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
         git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
-        cd "$NSS_DIR"
-        ./build.sh -v -Ddisable_tests=1 --static
-      env:
-        NSS_DIR: ${{ github.workspace }}/nss
-        NSPR_DIR: ${{ github.workspace }}/nspr
+      # env:
+      #   NSS_DIR: ${{ github.workspace }}/nss
+      #   NSPR_DIR: ${{ github.workspace }}/nspr
+    
+    - name: Build NSS
+      run: |
+        cd "${{ env.NSS_DIR }}"
+        bash ./build.sh -v -Ddisable_tests=1 --static
+      shell: bash
+
