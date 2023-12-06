@@ -81,13 +81,13 @@ jobs:
           NSS_DIR: ${{ github.workspace }}/nss
           NSPR_DIR: ${{ github.workspace }}/nspr
       
-      - name: Build NSS
-        if: runner.os == 'Windows'
-        run: |
-          python "$NSS_DIR/mach" build
-        shell: bash
-        env:
-          NSS_DIR: ${{ github.workspace }}/nss
+      # - name: Build NSS
+      #   if: runner.os == 'Windows'
+      #   run: |
+      #     python "$NSS_DIR/mach" build
+      #   shell: bash
+      #   env:
+      #     NSS_DIR: ${{ github.workspace }}/nss
 
       
       # - name: Setup WSL for Windows build
