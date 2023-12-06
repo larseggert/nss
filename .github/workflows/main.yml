@@ -22,6 +22,13 @@ jobs:
         repository: 'nss-dev/nss'
         path: 'nss'
 
+    - name: Setup NSS and NSPR
+      run: |
+        cd nss
+        git submodule update --init
+        cd ..
+        git clone https://hg.mozilla.org/projects/nspr
+
     - name: Build NSS
       run: |
         cd nss
