@@ -1,0 +1,87 @@
+name: CI
+on: [push, pull_request]
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Build & test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust-toolchain: [1.74.0] #, stable] #, beta]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: -C link-arg=-fuse-ld=lld
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+          components: rustfmt, clippy
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get install -y --no-install-recommends gyp mercurial ninja-build
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+      - name: Install dependencies (MacOS)
+        if: runner.os == 'MacOS'
+        run: |
+          brew install ninja mercurial cargo-binstall
+          # python3 -m pip install gyp-next
+          # Above does not work, since pypi only has gyp 0.15.0, which is too old
+          # for the homebrew python3. Install from source instead.
+          python3 -m pip install git+https://github.com/nodejs/gyp-next
+          python3 -m pip install packaging
+          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-ExecutionPolicy Unrestricted -Scope Process; iex (iwr "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
+
+      - name: Set up Windows build environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Rust tools
+        run: cargo +${{ matrix.rust-toolchain }} binstall --no-confirm cargo-llvm-cov cargo-nextest
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # This step might be removed if the distro included a recent enough
+      # version of NSS.  Ubuntu 20.04 only has 3.49, which is far too old.
+      # (neqo-crypto/build.rs would also need to query pkg-config to get the
+      # right build flags rather than building NSS.)
+      - name: Fetch NSS and NSPR
+        run: |
+          hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
+          git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
+          echo "NSS_DIR=$NSS_DIR" >> "$GITHUB_ENV"
+          echo "NSPR_DIR=$NSPR_DIR" >> "$GITHUB_ENV"
+          # echo "NSS_JOBS=$NUMBER_OF_PROCESSORS" >> "$GITHUB_ENV"
+          echo "NSS_JOBS=1" >> "$GITHUB_ENV"
+        env:
+          NSS_DIR: ${{ github.workspace }}/nss
+          NSPR_DIR: ${{ github.workspace }}/nspr
+
+      # Ideally, we could just use the build.sh script that comes with NSS.
+      - name: Rewire NSS build.sh (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "#!/usr/bin/env bash" > "$NSS_DIR"/build.sh
+          echo "make -C \"$NSS_DIR\" -j \"$NSS_JOBS\" nss_build_all USE_64=1 NSS_DISABLE_GTESTS=1" >> "$NSS_DIR"/build.sh
+          echo "BASH=$SHELL" >> "$GITHUB_ENV"
+
+
+
