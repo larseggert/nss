@@ -82,9 +82,9 @@ jobs:
           NSPR_DIR: ${{ github.workspace }}/nspr
       
       - name: Build NSS
+        if: runner.os == 'Windows'
         run: |
-          cd "$NSS_DIR"
-          ./mach build
+          python "$NSS_DIR/mach" build
         shell: bash
         env:
           NSS_DIR: ${{ github.workspace }}/nss
