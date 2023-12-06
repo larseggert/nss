@@ -27,18 +27,30 @@ jobs:
         python3 -m pip install gyp-next
         echo "PATH=${env:PATH};${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools" >> $GITHUB_ENV
 
+    # - name: Clone and Extract NSS
+    #   run: |
+    #     Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_${{ env.VERSION_UNDERSCORED }}_RTM/src/nss-${{ env.VERSION }}.tar.gz" -OutFile "nss-${{ env.VERSION }}.tar.gz"
+    #     tar -xzf "nss-${{ env.VERSION }}.tar.gz" -C "${{ env.NSS_DIR }}"
+    #   env:
+    #     VERSION: 3.45 # replace with actual version
+    #     VERSION_UNDERSCORED: 3_45 # replace with actual version underscored
+    #     NSS_DIR: ${{ github.workspace }}/nss
+
     - name: Clone and Extract NSS
       run: |
-        Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_${{ env.VERSION_UNDERSCORED }}_RTM/src/nss-${{ env.VERSION }}.tar.gz" -OutFile "nss-${{ env.VERSION }}.tar.gz"
-        tar -xzf "nss-${{ env.VERSION }}.tar.gz" -C "${{ env.NSS_DIR }}"
+        New-Item -ItemType directory -Path $NSS_DIR -Force
+        Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_80_RTM/src/nss-3.80.tar.gz" -OutFile "nss-3.80.tar.gz"
+        tar -xzf "nss-3.80.tar.gz" -C $NSS_DIR
       env:
-        VERSION: 3.45 # replace with actual version
-        VERSION_UNDERSCORED: 3_45 # replace with actual version underscored
         NSS_DIR: ${{ github.workspace }}/nss
-
+    
     - name: Build NSS
       run: |
         cd "${{ env.NSS_DIR }}/nss"
         bash ./build.sh -v -Ddisable_tests=1 --static
       env:
         NSS_DIR: ${{ github.workspace }}/nss
+
+
+
+
