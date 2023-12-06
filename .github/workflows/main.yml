@@ -9,10 +9,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Visual Studio 2019
-        uses: actions/setup-msbuild@v1
-        # Additional setup for Visual Studio 2019 might be necessary
-
       - name: Install and setup Gyp
         run: |
           git clone https://chromium.googlesource.com/external/gyp C:\build\gyp
@@ -31,4 +27,3 @@ jobs:
           $vsDevCmd = "${vsPath}\Common7\Tools\VsDevCmd.bat"
           cmd.exe /c "`"$vsDevCmd`" -arch=amd64 && cd C:\mozilla-build\msys && msys && cd /c/build/nss-3.45/nss && ./build.sh"
         shell: cmd
-
