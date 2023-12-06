@@ -55,11 +55,6 @@ jobs:
           # See https://github.com/ilammy/msvc-dev-cmd#name-conflicts-with-shell-bash
           rm /usr/bin/link.exe
       
-      - name: Install Dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          choco install gyp-next ninja
-      
       - name: Checkout
         uses: actions/checkout@v4
 
