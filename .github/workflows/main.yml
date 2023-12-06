@@ -65,15 +65,25 @@ jobs:
           NSS_DIR: ${{ github.workspace }}/nss
           NSPR_DIR: ${{ github.workspace }}/nspr
 
+      - name: Install moztools (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          curl -L -o moztools.zip https://ftp.mozilla.org/pub/mozilla/libraries/win32/moztools-static.zip
+          unzip moztools.zip
+          mv moztools/bin/nsinstall.exe /usr/bin
+          rm -r moztools.zip moztools
+          # See https://github.com/ilammy/msvc-dev-cmd#name-conflicts-with-shell-bash
+          rm /usr/bin/link.exe
+
       - name: Build NSS (Linux and MacOS)
-        if: runner.os != 'Windows'
+        # if: runner.os != 'Windows'
         run: |
           cd "$NSS_DIR"
           ./mach build
           # ./build.sh
         env:
           NSS_DIR: ${{ github.workspace }}/nss
-
+  
       # - name: Setup WSL for Windows build
       #   if: runner.os == 'Windows'
       #   run: |
