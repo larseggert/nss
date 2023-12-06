@@ -1,32 +1,26 @@
-name: CI
-on: [push, pull_request]
-
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    - name: Install MozillaBuild
+      run: |
+        Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe" -OutFile "MozillaBuildSetup.exe"
+        Start-Process -FilePath .\MozillaBuildSetup.exe -Args '/S' -Wait -NoNewWindow
 
-      - name: Install and setup Gyp
-        run: |
-          git clone https://chromium.googlesource.com/external/gyp C:\build\gyp
-          echo "C:\mozilla-build\python;C:\build\gyp" | Out-File -Append -Encoding ASCII -FilePath $env:GITHUB_PATH
+    - name: Setup Environment Variables
+      run: |
+        echo "MOZILLABUILD_PATH=C:\mozilla-build" >> $GITHUB_ENV
+        echo "PATH=${env:MOZILLABUILD_PATH}\msys\bin;${env:PATH}" >> $GITHUB_ENV
 
-      - name: Download and extract NSS
-        run: |
-          Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_45_RTM/src/nss-3.45-with-nspr-4.21.tar.gz" -OutFile "C:\build\nss-3.45-with-nspr-4.21.tar.gz"
-          7z x "C:\build\nss-3.45-with-nspr-4.21.tar.gz" -o"C:\build"
-          7z x "C:\build\nss-3.45-with-nspr-4.21.tar" -o"C:\build"
+    - name: Checkout NSS
+      uses: actions/checkout@v2
+      with:
+        repository: 'nss-dev/nss'
+        path: 'nss'
 
-      - name: Build NSS
-        run: |
-          cd C:\mozilla-build\msys
-          msys
-          cd /c/build/nss-3.45/nss
-          ./build.sh
-        shell: cmd
-
-
-
+    - name: Build NSS
+      run: |
+        cd nss
+        ./build.sh
+      shell: bash
