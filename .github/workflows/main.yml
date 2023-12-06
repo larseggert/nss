@@ -114,15 +114,15 @@ jobs:
       #     echo "make -C \"$NSS_DIR\" -j \"$NSS_JOBS\" nss_build_all USE_64=1 NSS_DISABLE_GTESTS=1" >> "$NSS_DIR"/build.sh
       #     echo "BASH=$SHELL" >> "$GITHUB_ENV"
 
-      # - name: Build NSS with make/msvc (Windows)
-      #   if: runner.os == 'Windows'
-      #   shell: bash
-      #   env:
-      #     OS_TARGET: WIN95
-      #     # OS_ARCH: WINNT
-      #   run: |
-      #     rm /usr/bin/link.exe || true
-      #     make -C "$NSS_DIR" nss_build_all USE_64=1 OS_ARCH=WINNT || true
-      #     find dist || true
+      - name: Build NSS with make/msvc (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          OS_TARGET: WIN95
+          # OS_ARCH: WINNT
+        run: |
+          rm /usr/bin/link.exe || true
+          make -C "$NSS_DIR" nss_build_all USE_64=1 OS_ARCH=WINNT || true
+          find dist || true
 
 
