@@ -47,6 +47,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cleanup NSS and NSPR directories
+        run: |
+          rm -rf "$NSS_DIR" "$NSPR_DIR"
+        env:
+          NSS_DIR: ${{ github.workspace }}/nss
+          NSPR_DIR: ${{ github.workspace }}/nspr
+
       - name: Fetch NSS and NSPR
         run: |
           hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
