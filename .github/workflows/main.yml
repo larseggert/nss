@@ -59,7 +59,6 @@ jobs:
           NSS_DIR: ${{ github.workspace }}/nss-repo  # Changed to nss-repo
           NSPR_DIR: ${{ github.workspace }}/nspr-repo  # Changed to nspr-repo
 
-      # Ideally, we could just use the build.sh script that comes with NSS.
       - name: Rewire NSS build.sh (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -67,5 +66,11 @@ jobs:
           echo "make -C \"$NSS_DIR\" -j \"$NSS_JOBS\" nss_build_all USE_64=1 NSS_DISABLE_GTESTS=1" >> "$NSS_DIR"/build.sh
           echo "BASH=$SHELL" >> "$GITHUB_ENV"
 
+      - name: Build NSS
+        run: |
+          cd "$NSS_DIR"
+          ./build.sh -opt
+        env:
+          NSS_DIR: ${{ github.workspace }}/nss-repo  # Assuming you are using nss-repo as the NSS directory
 
 
