@@ -10,7 +10,7 @@ jobs:
       run: |
         Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe" -OutFile "MozillaBuildSetup.exe"
         Start-Process -FilePath .\MozillaBuildSetup.exe -Args '/S' -Wait -NoNewWindow
-    
+  
     - name: Setup Environment Variables
       run: |
         echo "MOZILLABUILD_PATH=C:\mozilla-build" >> $GITHUB_ENV
