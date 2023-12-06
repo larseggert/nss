@@ -47,6 +47,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10.12'
+  
       - name: Cleanup NSS and NSPR directories
         run: |
           rm -rf "$NSS_DIR" "$NSPR_DIR"
@@ -74,16 +79,21 @@ jobs:
           rm -r moztools.zip moztools
           # See https://github.com/ilammy/msvc-dev-cmd#name-conflicts-with-shell-bash
           rm /usr/bin/link.exe
-
-      - name: Build NSS (Linux and MacOS)
-        # if: runner.os != 'Windows'
+      
+      - name: Install Dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install gyp ninja
+      
+      - name: Build NSS
         run: |
           cd "$NSS_DIR"
           ./mach build
-          # ./build.sh
+        shell: bash
         env:
           NSS_DIR: ${{ github.workspace }}/nss
-  
+
+      
       # - name: Setup WSL for Windows build
       #   if: runner.os == 'Windows'
       #   run: |
