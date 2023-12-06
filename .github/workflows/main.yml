@@ -1,128 +1,34 @@
 name: CI
 on: [push, pull_request]
-env:
-  CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Build & test
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest]
-        # os: [ubuntu-latest, macos-latest, windows-latest]
-        rust-toolchain: [1.74.0] #, stable] #, beta]
-    runs-on: ${{ matrix.os }}
-    env:
-      RUSTFLAGS: -C link-arg=-fuse-ld=lld
-    defaults:
-      run:
-        shell: bash
+  build:
+    runs-on: windows-latest
 
     steps:
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust-toolchain }}
-          components: rustfmt, clippy
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Install dependencies (Linux)
-        if: runner.os == 'Linux'
-        env:
-          DEBIAN_FRONTEND: noninteractive
+      - name: Set up Visual Studio 2019
+        uses: actions/setup-msbuild@v1
+        # Additional setup for Visual Studio 2019 might be necessary
+
+      - name: Install and setup Gyp
         run: |
-          sudo apt-get install -y --no-install-recommends gyp mercurial ninja-build
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          git clone https://chromium.googlesource.com/external/gyp C:\build\gyp
+          echo "C:\mozilla-build\python;C:\build\gyp" | Out-File -Append -Encoding ASCII -FilePath $env:GITHUB_PATH
 
-      - name: Install dependencies (MacOS)
-        if: runner.os == 'MacOS'
+      - name: Download and extract NSS
         run: |
-          brew install ninja mercurial cargo-binstall
-          # python3 -m pip install gyp-next
-          # Above does not work, since pypi only has gyp 0.15.0, which is too old
-          # for the homebrew python3. Install from source instead.
-          python3 -m pip install git+https://github.com/nodejs/gyp-next
-          python3 -m pip install packaging
-          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
+          Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_45_RTM/src/nss-3.45-with-nspr-4.21.tar.gz" -OutFile "C:\build\nss-3.45-with-nspr-4.21.tar.gz"
+          7z x "C:\build\nss-3.45-with-nspr-4.21.tar.gz" -o"C:\build"
+          7z x "C:\build\nss-3.45-with-nspr-4.21.tar" -o"C:\build"
 
-      - name: Install moztools (Windows)
-        if: runner.os == 'Windows'
+      - name: Build NSS
         run: |
-          curl -L -o moztools.zip https://ftp.mozilla.org/pub/mozilla/libraries/win32/moztools-static.zip
-          unzip moztools.zip
-          mv moztools/bin/nsinstall.exe /usr/bin
-          rm -r moztools.zip moztools
-          # See https://github.com/ilammy/msvc-dev-cmd#name-conflicts-with-shell-bash
-          rm /usr/bin/link.exe
-      
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12.0'
-  
-      - name: Cleanup NSS and NSPR directories
-        run: |
-          rm -rf "$NSS_DIR" "$NSPR_DIR"
-        env:
-          NSS_DIR: ${{ github.workspace }}/nss
-          NSPR_DIR: ${{ github.workspace }}/nspr
-
-      - name: Fetch NSS and NSPR
-        run: |
-          hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
-          git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
-          echo "NSS_DIR=$NSS_DIR" >> "$GITHUB_ENV"
-          echo "NSPR_DIR=$NSPR_DIR" >> "$GITHUB_ENV"
-          echo "NSS_JOBS=1" >> "$GITHUB_ENV"
-        env:
-          NSS_DIR: ${{ github.workspace }}/nss
-          NSPR_DIR: ${{ github.workspace }}/nspr
-      
-      # - name: Build NSS
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     python "$NSS_DIR/mach" build
-      #   shell: bash
-      #   env:
-      #     NSS_DIR: ${{ github.workspace }}/nss
-
-      
-      # - name: Setup WSL for Windows build
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     wsl --install -d Ubuntu
-      #     wsl --set-version Ubuntu 2
-      #     wsl -l -v
-      #     wsl sudo apt update && sudo apt upgrade -y
-      #     # Install necessary build tools inside WSL
-      #     wsl sudo apt install build-essential
-      
-      # - name: Build with WSL (Windows)
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     wsl -- cd "$NSS_DIR" && ./build.sh --opt
-      #   env:
-      #     NSS_DIR: ${{ github.workspace }}/nss
-
-      # - name: Rewire NSS build.sh (Windows)
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     echo "#!/usr/bin/env bash" > "$NSS_DIR"/build.sh
-      #     echo "make -C \"$NSS_DIR\" -j \"$NSS_JOBS\" nss_build_all USE_64=1 NSS_DISABLE_GTESTS=1" >> "$NSS_DIR"/build.sh
-      #     echo "BASH=$SHELL" >> "$GITHUB_ENV"
-
-      - name: Build NSS with make/msvc (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        env:
-          OS_TARGET: WIN95
-          # OS_ARCH: WINNT
-        run: |
-          rm /usr/bin/link.exe || true
-          make -C "$NSS_DIR" nss_build_all USE_64=1 OS_ARCH=WINNT || true
-          find dist || true
-
+          $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswherePath -latest -property installationPath
+          $vsDevCmd = "${vsPath}\Common7\Tools\VsDevCmd.bat"
+          cmd.exe /c "`"$vsDevCmd`" -arch=amd64 && cd C:\mozilla-build\msys && msys && cd /c/build/nss-3.45/nss && ./build.sh"
+        shell: cmd
 
