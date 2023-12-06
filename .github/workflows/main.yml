@@ -9,7 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [windows-latest]
+        # os: [ubuntu-latest, macos-latest, windows-latest]
         rust-toolchain: [1.74.0] #, stable] #, beta]
     runs-on: ${{ matrix.os }}
     env:
@@ -44,6 +45,21 @@ jobs:
           python3 -m pip install packaging
           echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
 
+      - name: Install moztools (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          curl -L -o moztools.zip https://ftp.mozilla.org/pub/mozilla/libraries/win32/moztools-static.zip
+          unzip moztools.zip
+          mv moztools/bin/nsinstall.exe /usr/bin
+          rm -r moztools.zip moztools
+          # See https://github.com/ilammy/msvc-dev-cmd#name-conflicts-with-shell-bash
+          rm /usr/bin/link.exe
+      
+      - name: Install Dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install gyp-next ninja
+      
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -69,21 +85,6 @@ jobs:
         env:
           NSS_DIR: ${{ github.workspace }}/nss
           NSPR_DIR: ${{ github.workspace }}/nspr
-
-      - name: Install moztools (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          curl -L -o moztools.zip https://ftp.mozilla.org/pub/mozilla/libraries/win32/moztools-static.zip
-          unzip moztools.zip
-          mv moztools/bin/nsinstall.exe /usr/bin
-          rm -r moztools.zip moztools
-          # See https://github.com/ilammy/msvc-dev-cmd#name-conflicts-with-shell-bash
-          rm /usr/bin/link.exe
-      
-      - name: Install Dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          choco install gyp ninja
       
       - name: Build NSS
         run: |
