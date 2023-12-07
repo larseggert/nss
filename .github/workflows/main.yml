@@ -42,7 +42,7 @@ jobs:
       run: |
         Set-Location -Path "${{ env.NSS_DIR }}"
         Get-ChildItem -Path . # List contents to verify presence of build.sh
-        bash ./build.sh -v -Ddisable_tests=1 --static
+        bash ./build.sh -v -Ddisable_tests=1
       shell: pwsh
       env:
         NSS_DIR: ${{ github.workspace }}/nss
