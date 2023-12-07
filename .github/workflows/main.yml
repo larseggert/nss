@@ -16,7 +16,7 @@ jobs:
 
     - name: Install Ubuntu on WSL
       run: |
-        wsl --install -d Ubuntu
+        wsl --install
       shell: pwsh
 
     - name: Update and Install Dependencies on Ubuntu
