@@ -21,8 +21,9 @@ jobs:
       run: choco install llvm
 
     - name: Install Visual Studio 2019 Build Tools
-      run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-        choco install visualstudio2019-workload-vctools
+      run: |
+        choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -y
+        choco install visualstudio2019-workload-vctools -y
 
     - name: Prepare and Clone NSS and NSPR Repositories
       run: |
