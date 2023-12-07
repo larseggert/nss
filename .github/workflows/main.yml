@@ -38,7 +38,7 @@ jobs:
     
     - name: Clone and Extract NSS
       run: |
-        $NSS_DIR = "D:\a\nss\nss" # Assuming this is your intended NSS directory
+        $NSS_DIR = "D:\a\nss\nss"
         New-Item -ItemType directory -Path $NSS_DIR -Force
         Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_80_RTM/src/nss-3.80.tar.gz" -OutFile "nss-3.80.tar.gz"
         tar -xzf "nss-3.80.tar.gz" -C $NSS_DIR
@@ -46,8 +46,9 @@ jobs:
     
     - name: Build NSS
       run: |
-        $NSS_DIR = "D:\a\nss\nss" # Ensure this is consistent with the above
-        Set-Location -Path $NSS_DIR # Change to the NSS directory
+        $NSS_DIR = "D:\a\nss\nss"
+        Set-Location -Path $NSS_DIR
+        Get-ChildItem -Path . # List contents to verify presence of build.sh
         bash ./build.sh -v -Ddisable_tests=1 --static
       shell: pwsh
 
