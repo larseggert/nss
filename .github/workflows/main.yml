@@ -1,57 +1,46 @@
-name: CI
-on: [push, pull_request]
+name: Build NSS on Windows
+
+on: [push]
 
 jobs:
   build:
     runs-on: windows-latest
 
+    strategy:
+      matrix:
+        runtime: ["msvc", "mingw"]
+
     steps:
-    # - name: Checkout Repository
-    #   uses: actions/checkout@v2
+      - name: Install Visual Studio 2022 Build Tools
+        uses: actions/setup-vcpkg@v3
+        with:
+          installer_url: https://github.com/Microsoft/vcpkg/releases/download/22.05/vcpkg-installer-2022.exe
+          version: '22.05'
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+      - name: Checkout NSS source code
+        uses: actions/checkout@v3
 
-    - name: Install GYP
-      run: pip install gyp-next
+      - name: Install NSS dependencies
+        run: |
+          cd nss
+          mkdir -p build
+          cd build
+          ${{ env.VCPKG_INSTALLATION }}/vcpkg install --triplet=x64-windows-static gyp ninja
 
-    - name: Install LLVM/Clang
-      run: choco install llvm
+      - name: Build NSS
+        run: |
+          cd nss
+          mkdir -p dist
+          cd build
+          ./build.sh ${{ matrix.runtime }}
 
-    - name: Install Visual Studio 2019 Build Tools
-      run: |
-        choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -y
-        choco install visualstudio2019-workload-vctools -y
+      - name: Install NSS build artifacts
+        run: |
+          cp -r dist/Debug ../build/nss-debug
+          cp -r dist/Release ../build/nss-release
 
-    - name: Prepare and Clone NSS and NSPR Repositories
-      run: |
-        if [ -d "nss" ]; then
-          echo "Removing existing nss directory..."
-          rm -rf nss
-        fi
-    
-        if [ -d "nspr" ]; then
-          echo "Removing existing nspr directory..."
-          rm -rf nspr
-        fi
-    
-        echo "Cloning NSS repository with --depth=1..."
-        git clone --depth=1 https://github.com/nss-dev/nss.git
-    
-        echo "Cloning NSPR repository..."
-        git clone https://hg.mozilla.org/projects/nspr
-      shell: bash
-
-    - name: Generate Visual Studio Project
-      run: gyp nss/nss.gyp --format=msvs -DOS=win
-      working-directory: ./nss
-
-    - name: Build with Clang-CL
-      run: |
-        $env:CC = "clang-cl"
-        $env:CXX = "clang-cl"
-        "& 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe' nss.sln /p:Configuration=Release /p:Platform=x64"
-      shell: pwsh
-      working-directory: ./nss
+      - name: Upload NSS build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: ../build
+          name: NSS-build-artifacts
