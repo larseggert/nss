@@ -47,7 +47,7 @@ jobs:
     - name: Build NSS
       run: |
         $NSS_DIR = "D:\a\nss\nss"
-        Set-Location -Path $NSS_DIR
+        Set-Location -Path $NSS_DIR/nss-3.80
         Get-ChildItem -Path . # List contents to verify presence of build.sh
         bash ./build.sh -v -Ddisable_tests=1 --static
       shell: pwsh
