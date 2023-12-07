@@ -38,7 +38,7 @@ jobs:
     
     - name: Clone and Extract NSS
       run: |
-        $NSS_DIR = "${{ github.workspace }}/nss"
+        $NSS_DIR = "D:\a\nss\nss" # Assuming this is your intended NSS directory
         New-Item -ItemType directory -Path $NSS_DIR -Force
         Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_80_RTM/src/nss-3.80.tar.gz" -OutFile "nss-3.80.tar.gz"
         tar -xzf "nss-3.80.tar.gz" -C $NSS_DIR
@@ -46,12 +46,11 @@ jobs:
     
     - name: Build NSS
       run: |
-        $NSS_DIR = "${{ github.workspace }}/nss"
-        cd "$NSS_DIR/nss"
+        $NSS_DIR = "D:\a\nss\nss" # Ensure this is consistent with the above
+        Set-Location -Path $NSS_DIR # Change to the NSS directory
         bash ./build.sh -v -Ddisable_tests=1 --static
       shell: pwsh
-      env:
-        NSS_DIR: ${{ github.workspace }}/nss
+
     
 
 
