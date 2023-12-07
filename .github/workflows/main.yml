@@ -17,18 +17,31 @@ jobs:
     - name: Install GYP
       run: pip install gyp-next
 
-    - name: Clone NSS Repository
-      run: git clone https://github.com/nss-dev/nss.git
-
-    - name: Clone NSPR Repository
-      run: hg clone https://hg.mozilla.org/projects/nspr
-
     - name: Install LLVM/Clang
       run: choco install llvm
 
     - name: Install Visual Studio 2019 Build Tools
       run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
         choco install visualstudio2019-workload-vctools
+
+    - name: Prepare and Clone NSS and NSPR Repositories
+      run: |
+        if [ -d "nss" ]; then
+          echo "Removing existing nss directory..."
+          rm -rf nss
+        fi
+    
+        if [ -d "nspr" ]; then
+          echo "Removing existing nspr directory..."
+          rm -rf nspr
+        fi
+    
+        echo "Cloning NSS repository with --depth=1..."
+        git clone --depth=1 https://github.com/nss-dev/nss.git
+    
+        echo "Cloning NSPR repository..."
+        git clone https://hg.mozilla.org/projects/nspr
+      shell: bash
 
     - name: Generate Visual Studio Project
       run: gyp nss/nss.gyp --format=msvs -DOS=win
