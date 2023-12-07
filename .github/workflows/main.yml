@@ -1,4 +1,4 @@
-name: WSL
+name: CI
 on: [push, pull_request]
 
 jobs:
@@ -9,45 +9,22 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Enable WSL
-      run: |
-        wsl --install
-      shell: pwsh
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
 
-    - name: Install Ubuntu on WSL
-      run: |
-        wsl --install
-      shell: pwsh
+    - name: Install GYP
+      run: pip install gyp-next
 
-    - name: Update and Install Dependencies on Ubuntu
+    - name: Install Visual Studio 2019 Build Tools
       run: |
-        wsl sudo apt update && sudo apt upgrade -y
-        wsl sudo apt install -y build-essential git python3 ninja-build
-      shell: pwsh
+        choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+        choco install visualstudio2019-workload-vctools
 
-    - name: Install GYP on Ubuntu
-      run: |
-        wsl python3 -m pip install gyp-next
-      shell: pwsh
+    - name: Generate Visual Studio Project
+      run: gyp nss.gyp --format=msvs -DOS=win
 
-    - name: Fetch NSS and NSPR
+    - name: Build with Visual Studio 2019
       run: |
-        wsl git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
-        wsl hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
-        echo "NSS_DIR=$NSS_DIR" >> "$GITHUB_ENV"
-        echo "NSPR_DIR=$NSPR_DIR" >> "$GITHUB_ENV"
-        echo "NSS_JOBS=$NUMBER_OF_PROCESSORS" >> "$GITHUB_ENV"
-      shell: pwsh
-      env:
-        NSS_DIR: /mnt/${{ github.workspace }}/nss
-        NSPR_DIR: /mnt/${{ github.workspace }}/nspr
-
-    - name: Build NSS on Ubuntu
-      run: |
-        wsl bash -c '
-          cd "$NSS_DIR"
-          ./build.sh -v -Ddisable_tests=1 --static
-        '
-      shell: pwsh
-      env:
-        NSS_DIR: /mnt/${{ github.workspace }}/nss
+        "& 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe' nss.sln /p:Configuration=Release /p:Platform=x64"
