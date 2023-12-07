@@ -12,13 +12,10 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.12'
+        python-version: '3.x'
 
     - name: Install GYP
       run: pip install gyp-next
-
-    - name: Install Mercurial (hg)
-      run: choco install mercurial
 
     - name: Clone NSS Repository
       run: git clone https://github.com/nss-dev/nss.git
@@ -26,16 +23,21 @@ jobs:
     - name: Clone NSPR Repository
       run: hg clone https://hg.mozilla.org/projects/nspr
 
+    - name: Install LLVM/Clang
+      run: choco install llvm
+
     - name: Install Visual Studio 2019 Build Tools
-      run: |
-        choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+      run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
         choco install visualstudio2019-workload-vctools
 
     - name: Generate Visual Studio Project
       run: gyp nss/nss.gyp --format=msvs -DOS=win
       working-directory: ./nss
 
-    - name: Build with Visual Studio 2019
+    - name: Build with Clang-CL
       run: |
+        $env:CC = "clang-cl"
+        $env:CXX = "clang-cl"
         "& 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe' nss.sln /p:Configuration=Release /p:Platform=x64"
+      shell: pwsh
       working-directory: ./nss
