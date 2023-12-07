@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Install Visual Studio 2022 Build Tools
-        uses: actions/setup-vcpkg@v3
+        uses: actions/setup-vcpkg@v2
         with:
           installer_url: https://github.com/Microsoft/vcpkg/releases/download/22.05/vcpkg-installer-2022.exe
           version: '22.05'
