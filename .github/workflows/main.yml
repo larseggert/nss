@@ -22,7 +22,16 @@ jobs:
         install: nsinstall ninja python-six
         path-type: inherit
 
-    - name: Install GYP
+ # - name: Install dependencies (Windows)
+ #        if: runner.os == 'Windows'
+ #        shell: pwsh
+ #        run: Set-ExecutionPolicy Unrestricted -Scope Process; iex (iwr "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
+
+ #      - name: Set up Windows build environment
+ #        if: runner.os == 'Windows'
+ #        uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install GYP (Windows)
       run: |
         python3 -m pip install gyp-next
         echo "PATH=${env:PATH};${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools" >> $GITHUB_ENV
@@ -36,14 +45,26 @@ jobs:
     #     VERSION_UNDERSCORED: 3_45 # replace with actual version underscored
     #     NSS_DIR: ${{ github.workspace }}/nss
     
-    - name: Clone and Extract NSS
-      run: |
-        $NSS_DIR = "D:\a\nss\nss"
-        New-Item -ItemType directory -Path $NSS_DIR -Force
-        Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_80_RTM/src/nss-3.80.tar.gz" -OutFile "nss-3.80.tar.gz"
-        tar -xzf "nss-3.80.tar.gz" -C $NSS_DIR
-      shell: pwsh
-    
+    # - name: Clone and Extract NSS
+    #   run: |
+    #     $NSS_DIR = "D:\a\nss\nss"
+    #     New-Item -ItemType directory -Path $NSS_DIR -Force
+    #     Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_80_RTM/src/nss-3.80.tar.gz" -OutFile "nss-3.80.tar.gz"
+    #     tar -xzf "nss-3.80.tar.gz" -C $NSS_DIR
+    #   shell: pwsh
+
+      - name: Fetch NSS and NSPR
+        run: |
+          hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
+          git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
+          echo "NSS_DIR=$NSS_DIR" >> "$GITHUB_ENV"
+          echo "NSPR_DIR=$NSPR_DIR" >> "$GITHUB_ENV"
+          echo "NSS_JOBS=$NUMBER_OF_PROCESSORS" >> "$GITHUB_ENV"
+          echo "BASH=$SHELL" >> "$GITHUB_ENV"
+        env:
+          NSS_DIR: ${{ github.workspace }}/nss
+          NSPR_DIR: ${{ github.workspace }}/nspr
+  
     - name: Build NSS
       run: |
         $NSS_DIR = "D:\a\nss\nss"
@@ -51,6 +72,10 @@ jobs:
         Get-ChildItem -Path . # List contents to verify presence of build.sh
         bash ./build.sh -v -Ddisable_tests=1 --static
       shell: pwsh
+
+
+
+
 
     
 
