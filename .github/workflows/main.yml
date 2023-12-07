@@ -35,21 +35,24 @@ jobs:
     #     VERSION: 3.45 # replace with actual version
     #     VERSION_UNDERSCORED: 3_45 # replace with actual version underscored
     #     NSS_DIR: ${{ github.workspace }}/nss
-
+    
     - name: Clone and Extract NSS
       run: |
+        $NSS_DIR = "${{ github.workspace }}/nss"
         New-Item -ItemType directory -Path $NSS_DIR -Force
         Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_80_RTM/src/nss-3.80.tar.gz" -OutFile "nss-3.80.tar.gz"
         tar -xzf "nss-3.80.tar.gz" -C $NSS_DIR
-      env:
-        NSS_DIR: ${{ github.workspace }}/nss
+      shell: pwsh
     
     - name: Build NSS
       run: |
-        cd "${{ env.NSS_DIR }}/nss"
+        $NSS_DIR = "${{ github.workspace }}/nss"
+        cd "$NSS_DIR/nss"
         bash ./build.sh -v -Ddisable_tests=1 --static
+      shell: pwsh
       env:
         NSS_DIR: ${{ github.workspace }}/nss
+    
 
 
 
