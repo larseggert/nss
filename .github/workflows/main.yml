@@ -12,10 +12,19 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
+        python-version: '3.12'
 
     - name: Install GYP
       run: pip install gyp-next
+
+    - name: Install Mercurial (hg)
+      run: choco install mercurial
+
+    - name: Clone NSS Repository
+      run: git clone https://github.com/nss-dev/nss.git
+
+    - name: Clone NSPR Repository
+      run: hg clone https://hg.mozilla.org/projects/nspr
 
     - name: Install Visual Studio 2019 Build Tools
       run: |
@@ -23,8 +32,10 @@ jobs:
         choco install visualstudio2019-workload-vctools
 
     - name: Generate Visual Studio Project
-      run: gyp nss.gyp --format=msvs -DOS=win
+      run: gyp nss/nss.gyp --format=msvs -DOS=win
+      working-directory: ./nss
 
     - name: Build with Visual Studio 2019
       run: |
         "& 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe' nss.sln /p:Configuration=Release /p:Platform=x64"
+      working-directory: ./nss
