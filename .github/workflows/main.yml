@@ -1,4 +1,4 @@
-name: CI
+name: WSL
 on: [push, pull_request]
 
 jobs:
@@ -6,44 +6,48 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Install MozillaBuild
-      run: |
-        Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe" -OutFile "MozillaBuildSetup.exe"
-        Start-Process -FilePath .\MozillaBuildSetup.exe -Args '/S' -Wait -NoNewWindow
-  
-    - name: Setup Environment Variables
-      run: |
-        echo "MOZILLABUILD_PATH=C:\mozilla-build" >> $GITHUB_ENV
-        echo "PATH=${env:MOZILLABUILD_PATH}\msys\bin;${env:MOZILLABUILD_PATH}\bin;${env:PATH}" >> $GITHUB_ENV
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
-    - name: Install dependencies (Windows)
-      uses: msys2/setup-msys2@v2
-      with:
-        install: nsinstall ninja python-six
-        path-type: inherit
-
-    - name: Install GYP (Windows)
+    - name: Enable WSL
       run: |
-        python3 -m pip install gyp-next
-        echo "PATH=${env:PATH};${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools" >> $GITHUB_ENV
+        wsl --install
+      shell: pwsh
+
+    - name: Install Ubuntu on WSL
+      run: |
+        wsl --install -d Ubuntu
+      shell: pwsh
+
+    - name: Update and Install Dependencies on Ubuntu
+      run: |
+        wsl sudo apt update && sudo apt upgrade -y
+        wsl sudo apt install -y build-essential git python3 ninja-build
+      shell: pwsh
+
+    - name: Install GYP on Ubuntu
+      run: |
+        wsl python3 -m pip install gyp-next
+      shell: pwsh
 
     - name: Fetch NSS and NSPR
       run: |
-        git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
-        hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
+        wsl git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
+        wsl hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
         echo "NSS_DIR=$NSS_DIR" >> "$GITHUB_ENV"
         echo "NSPR_DIR=$NSPR_DIR" >> "$GITHUB_ENV"
         echo "NSS_JOBS=$NUMBER_OF_PROCESSORS" >> "$GITHUB_ENV"
-      env:
-        NSS_DIR: ${{ github.workspace }}/nss
-        NSPR_DIR: ${{ github.workspace }}/nspr
-  
-    - name: Build NSS
-      run: |
-        Set-Location -Path "${{ env.NSS_DIR }}"
-        Get-ChildItem -Path . # List contents to verify presence of build.sh
-        bash ./build.sh -v -Ddisable_tests=1
       shell: pwsh
       env:
-        NSS_DIR: ${{ github.workspace }}/nss
-        NSPR_DIR: ${{ github.workspace }}/nspr
+        NSS_DIR: /mnt/${{ github.workspace }}/nss
+        NSPR_DIR: /mnt/${{ github.workspace }}/nspr
+
+    - name: Build NSS on Ubuntu
+      run: |
+        wsl bash -c '
+          cd "$NSS_DIR"
+          ./build.sh -v -Ddisable_tests=1 --static
+        '
+      shell: pwsh
+      env:
+        NSS_DIR: /mnt/${{ github.workspace }}/nss
