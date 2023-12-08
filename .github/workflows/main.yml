@@ -1,58 +1,100 @@
 name: CI
 on: [push, pull_request]
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    runs-on: windows-latest
-
-    steps:
-      # - name: Checkout Repository
-      #   uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-
-      - name: Install GYP
-        run: pip install gyp-next
-
-      - name: Install LLVM/Clang
-        run: choco install llvm -y
-
-      - name: Install Visual Studio 2019 Build Tools (Latest)
-        uses: actions/setup-vcpkg@v2
-        with:
-          installer-url: https://github.com/Microsoft/vcpkg/releases/download/22.05/vcpkg-installer-2022.exe
-          version: '22.05'
-
-      - name: Prepare and Clone NSS and NSPR Repositories
-        run: |
-          if [ -d "nss" ]; then
-            echo "Removing existing nss directory..."
-            rm -rf nss
-          fi
-
-          if [ -d "nspr" ]; then
-            echo "Removing existing nspr directory..."
-            rm -rf nspr
-          fi
-
-          echo "Cloning NSS repository with --depth=1..."
-          git clone --depth=1 https://github.com/nss-dev/nss.git
-
-          echo "Cloning NSPR repository..."
-          git clone https://hg.mozilla.org/projects/nspr
+  check:
+    name: Build & test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # os: [windows-latest]
+        rust-toolchain: [1.65.0] #, stable] #, beta]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: -C link-arg=-fuse-ld=lld
+    defaults:
+      run:
         shell: bash
 
-      - name: Generate Visual Studio Project
-        run: gyp nss/nss.gyp --format=msvs -DOS=win
-        working-directory: ./nss
+    steps:
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+          components: rustfmt, clippy
 
-      - name: Build with Clang-CL
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          $env:CC = "clang-cl"
-          $env:CXX = "clang-cl"
-          & 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe' nss.sln /p:Configuration=Release /p:Platform=x64
+          sudo apt-get install -y --no-install-recommends gyp mercurial ninja-build
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+      
+      - name: Install dependencies (MacOS)
+        if: runner.os == 'MacOS'
+        run: |
+          brew install ninja mercurial cargo-binstall
+          # python3 -m pip install gyp-next
+          # Above does not work, since pypi only has gyp 0.15.0, which is too old
+          # for the homebrew python3. Install from source instead.
+          python3 -m pip install git+https://github.com/nodejs/gyp-next
+          # python3 -m pip install packaging
+          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
+      
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
-        working-directory: ./nss
+        run: Set-ExecutionPolicy Unrestricted -Scope Process; iex (iwr "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
+
+      - name: Use MSYS2 environment and install more dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "C:\\msys64\\usr\\bin" >> "$GITHUB_PATH"
+          echo "C:\\msys64\\mingw64\\bin" >> "$GITHUB_PATH"
+          /c/msys64/usr/bin/pacman -S --noconfirm nsinstall
+          python3 -m pip install git+https://github.com/nodejs/gyp-next
+          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
+      
+      - name: Set up Windows build environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # - name: Install Rust tools
+      #   run: cargo +${{ matrix.rust-toolchain }} binstall --no-confirm cargo-llvm-cov cargo-nextest
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch NSS and NSPR
+        run: |
+          hg clone https://hg.mozilla.org/projects/nspr "$NSPR_DIR"
+          git clone --depth=1 https://github.com/nss-dev/nss "$NSS_DIR"
+          echo "NSS_DIR=$NSS_DIR" >> "$GITHUB_ENV"
+          echo "NSPR_DIR=$NSPR_DIR" >> "$GITHUB_ENV"
+          echo "NSS_JOBS=$NUMBER_OF_PROCESSORS" >> "$GITHUB_ENV"
+        env:
+          NSS_DIR: ${{ github.workspace }}/nss
+          NSPR_DIR: ${{ github.workspace }}/nspr
+
+      - name: Set up environment for NSS build.sh (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "GYP_MSVS_OVERRIDE_PATH=$VSINSTALLDIR" >> "$GITHUB_ENV"
+          echo "GYP_MSVS_VERSION=2022" >> "$GITHUB_ENV"
+          echo "BASH=$SHELL" >> "$GITHUB_ENV"
+          # See https://github.com/ilammy/msvc-dev-cmd#name-conflicts-with-shell-bash
+          rm /usr/bin/link.exe
+      
+      - name: Build NSS
+        run: |
+          # "$NSS_DIR"/build.sh -v -Ddisable_tests=1
+          find dist
+          exit 1
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/dist/Debug/lib" >> "$GITHUB_ENV"
+          echo "DYLD_LIBRARY_PATH=${{ github.workspace }}/dist/Debug/lib" >> "$GITHUB_ENV"
+        env:
+          RUST_BACKTRACE: 1
