@@ -66,8 +66,8 @@ jobs:
       # - name: Install Rust tools
       #   run: cargo +${{ matrix.rust-toolchain }} binstall --no-confirm cargo-llvm-cov cargo-nextest
 
-      - name: Checkout
-        uses: actions/checkout@v4
+      # - name: Checkout
+      #   uses: actions/checkout@v4
 
       - name: Fetch NSS and NSPR
         run: |
