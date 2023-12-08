@@ -38,11 +38,11 @@ jobs:
         if: runner.os == 'MacOS'
         run: |
           brew install ninja mercurial
-          python3 -m pip install gyp-next
+          # python3 -m pip install gyp-next
           # Above does not work, since pypi only has gyp 0.15.0, which is too old
           # for the homebrew python3. Install from source instead.
-          # python3 -m pip install git+https://github.com/nodejs/gyp-next
-          # python3 -m pip install packaging
+          python3 -m pip install git+https://github.com/nodejs/gyp-next
+          python3 -m pip install packaging
           echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
       
       - name: Install dependencies (Windows)
