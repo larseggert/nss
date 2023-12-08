@@ -20,11 +20,6 @@ jobs:
         shell: bash
 
     steps:
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust-toolchain }}
-          components: rustfmt, clippy
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
@@ -62,12 +57,6 @@ jobs:
       - name: Set up Windows build environment
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
-
-      # - name: Install Rust tools
-      #   run: cargo +${{ matrix.rust-toolchain }} binstall --no-confirm cargo-llvm-cov cargo-nextest
-
-      # - name: Checkout
-      #   uses: actions/checkout@v4
 
       - name: Fetch NSS and NSPR
         run: |
